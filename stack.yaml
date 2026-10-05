@@ -1,0 +1,4 @@
+snapshot: lts-24.61
+extra-deps:
+- gitea-api-1.23.1.0
+allow-newer: True

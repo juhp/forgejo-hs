@@ -1,0 +1,7 @@
+packages:
+         .
+
+source-repository-package
+    type: git
+    location: https://github.com/juhp/gitea-api.git
+    tag: fedec5883f975b12dc2acbb54ce1feff887c9e42
