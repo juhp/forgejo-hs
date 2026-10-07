@@ -13,8 +13,8 @@ where
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toLower)
 import qualified Data.Text as T
-import Gitea
-import Network.HTTP.Client.TLS
+import Gitea (configHost, configValidateAuthMethods, dispatchMime, issueListIssues, mimeError, mimeResult, newConfig, orgListRepos, (-&-), CreatedBy(..), E'State4(..), E'Type3(..), Issue(..), Label(..), Org(..), Owner(..), ParamType2(..), Repo(..), Repository(..), State3(..))
+import Network.HTTP.Client.TLS (newTlsManager)
 
 fedoraForge :: B.ByteString
 fedoraForge = B.pack "https://forge.fedoraproject.org/api/v1"
