@@ -14,7 +14,7 @@ import Paths_forgejo (version)
 
 main :: IO ()
 main =
-  simpleCmdArgs (Just version) "Pagure client" "Simple pagure CLI" $
+  simpleCmdArgs (Just version) "Forgejo client" "Simple forgejo CLI" $
   subcommands
   [ Subcommand "repos" "list org's repos" $
     listOrgReposCmd
