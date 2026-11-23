@@ -17,10 +17,14 @@ import qualified Data.Text as T
 import Gitea (configHost, configValidateAuthMethods, dispatchMime, issueListIssues, mimeError, mimeResult, newConfig, orgListRepos, (-&-), CreatedBy(..), E'State4(..), E'Type3(..), Issue(..), Label(..), Org(..), Owner(..), ParamType2(..), Repo(..), Repository(..), State3(..))
 import Network.HTTP.Client.TLS (newTlsManager)
 
+-- | Fedora Forge api url
 fedoraForge :: B.ByteString
 fedoraForge = B.pack "https://forge.fedoraproject.org/api/v1"
 
-listOrgRepos :: B.ByteString -> String -> IO (Either String [Repository])
+-- | List the repositories of a Forgejo org
+listOrgRepos :: B.ByteString -- ^ api url
+             -> String -- ^ org
+             -> IO (Either String [Repository])
 listOrgRepos url org = do
   let req = orgListRepos (Org $ T.pack org)
   mgr <- newTlsManager
@@ -36,10 +40,15 @@ data RepoIssueOptions = RepoIssueOptions
   , repoIssueState :: Maybe String
   }
 
+-- | no options
 defaultRepoIssueOptions :: RepoIssueOptions
 defaultRepoIssueOptions = RepoIssueOptions Nothing Nothing
 
-listRepoIssues :: B.ByteString -> String -> String -> RepoIssueOptions
+-- | List issues in a forgejo repo
+listRepoIssues :: B.ByteString -- ^ api url
+               -> String -- ^ repo owner
+               -> String -- ^ repo
+               -> RepoIssueOptions -- ^ issue filter options
                -> IO (Either String [Issue])
 listRepoIssues url owner repo options = do
   let baseReq = issueListIssues (Owner $ T.pack owner) (Repo $ T.pack repo)
