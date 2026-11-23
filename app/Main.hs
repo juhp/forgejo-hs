@@ -5,7 +5,7 @@ module Main (main) where
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import SimpleCmd (error')
+import SimpleCmd (error', (+-+))
 import SimpleCmdArgs
 
 import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge,
@@ -19,18 +19,22 @@ main =
   subcommands
   [ Subcommand "repos" "list org's repos" $
     listOrgReposCmd
-    <$> switchLongWith "full" "Print full name"
+    <$> serviceOpt
+    <*> switchLongWith "full" "Print full name"
     <*> strArg "ORG"
   , Subcommand "issues" "list repo issues" $
     repoIssuesCmd
-    <$> optional (strOptionLongWith "created-by" "USER" "Only issues created by USER")
+    <$> serviceOpt
+    <*> optional (strOptionLongWith "created-by" "USER" "Only issues created by USER")
     <*> optional (optionLongWith (eitherReader parseIssueState) "state" "STATE" "open, closed, or all")
     <*> strArg "OWNER/REPO"
   ]
+  where
+    serviceOpt = strOptionalWith 's' "server" "URL" ("Forgejo server" +-+ "[default:" +-+ fedoraForge ++ "]") fedoraForge
 
-listOrgReposCmd :: Bool -> String -> IO ()
-listOrgReposCmd full org = do
-  erepos <- listOrgRepos fedoraForge org
+listOrgReposCmd :: String -> Bool -> String -> IO ()
+listOrgReposCmd url full org = do
+  erepos <- listOrgRepos url org
   case erepos of
     Left err -> error' err
     Right repos ->
@@ -40,12 +44,13 @@ listOrgReposCmd full org = do
     printRepo repo =
       putStrLn $ (if full then org ++ "/" else "") ++ repo
 
-repoIssuesCmd :: Maybe String -> Maybe String -> String -> IO ()
-repoIssuesCmd createdBy state repoPath =
+repoIssuesCmd :: String -> Maybe String -> Maybe String -> String
+              -> IO ()
+repoIssuesCmd url createdBy state repoPath =
   case break (== '/') repoPath of
     (owner, '/':repo) | not (null owner) && not (null repo) && '/' `notElem` repo -> do
       let options = RepoIssueOptions createdBy state
-      eissues <- listRepoIssues fedoraForge owner repo options
+      eissues <- listRepoIssues url owner repo options
       case eissues of
         Left err -> error' err
         Right issues ->

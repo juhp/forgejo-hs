@@ -18,11 +18,11 @@ import Gitea (configHost, configValidateAuthMethods, dispatchMime, issueListIssu
 import Network.HTTP.Client.TLS (newTlsManager)
 
 -- | Fedora Forge api url
-fedoraForge :: B.ByteString
-fedoraForge = B.pack "https://forge.fedoraproject.org/api/v1"
+fedoraForge :: String
+fedoraForge = "https://forge.fedoraproject.org/api/v1"
 
 -- | List the repositories of a Forgejo org
-listOrgRepos :: B.ByteString -- ^ api url
+listOrgRepos :: String -- ^ api url
              -> String -- ^ org
              -> IO (Either String [Repository])
 listOrgRepos url org = do
@@ -30,7 +30,7 @@ listOrgRepos url org = do
   mgr <- newTlsManager
   config' <- newConfig
   let config = config'
-               { configHost = url
+               { configHost = B.pack url
                , configValidateAuthMethods = False }
                -- `addAuthMethod` AuthOAuthFoo "secret-key"
   mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
@@ -45,7 +45,7 @@ defaultRepoIssueOptions :: RepoIssueOptions
 defaultRepoIssueOptions = RepoIssueOptions Nothing Nothing
 
 -- | List issues in a forgejo repo
-listRepoIssues :: B.ByteString -- ^ api url
+listRepoIssues :: String -- ^ api url
                -> String -- ^ repo owner
                -> String -- ^ repo
                -> RepoIssueOptions -- ^ issue filter options
@@ -62,7 +62,7 @@ listRepoIssues url owner repo options = do
   mgr <- newTlsManager
   config' <- newConfig
   let config = config'
-               { configHost = url
+               { configHost = B.pack url
                , configValidateAuthMethods = False }
   mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
 
