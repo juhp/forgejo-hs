@@ -12,6 +12,7 @@ where
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toLower)
+import Data.Either.Extra (mapLeft)
 import qualified Data.Text as T
 import Gitea (configHost, configValidateAuthMethods, dispatchMime, issueListIssues, mimeError, mimeResult, newConfig, orgListRepos, (-&-), CreatedBy(..), E'State4(..), E'Type3(..), Issue(..), Label(..), Org(..), Owner(..), ParamType2(..), Repo(..), Repository(..), State3(..))
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -19,7 +20,7 @@ import Network.HTTP.Client.TLS (newTlsManager)
 fedoraForge :: B.ByteString
 fedoraForge = B.pack "https://forge.fedoraproject.org/api/v1"
 
-listOrgRepos :: B.ByteString -> String -> IO [Repository]
+listOrgRepos :: B.ByteString -> String -> IO (Either String [Repository])
 listOrgRepos url org = do
   let req = orgListRepos (Org $ T.pack org)
   mgr <- newTlsManager
@@ -28,10 +29,7 @@ listOrgRepos url org = do
                { configHost = url
                , configValidateAuthMethods = False }
                -- `addAuthMethod` AuthOAuthFoo "secret-key"
-  res <- dispatchMime mgr config req
-  case mimeResult res of
-    Left err -> error $ mimeError err
-    Right rs -> return rs
+  mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
 
 data RepoIssueOptions = RepoIssueOptions
   { repoIssueCreatedBy :: Maybe String
@@ -41,7 +39,8 @@ data RepoIssueOptions = RepoIssueOptions
 defaultRepoIssueOptions :: RepoIssueOptions
 defaultRepoIssueOptions = RepoIssueOptions Nothing Nothing
 
-listRepoIssues :: B.ByteString -> String -> String -> RepoIssueOptions -> IO [Issue]
+listRepoIssues :: B.ByteString -> String -> String -> RepoIssueOptions
+               -> IO (Either String [Issue])
 listRepoIssues url owner repo options = do
   let baseReq = issueListIssues (Owner $ T.pack owner) (Repo $ T.pack repo)
                 -&- ParamType2 E'Type3'Issues
@@ -54,10 +53,7 @@ listRepoIssues url owner repo options = do
   let config = config'
                { configHost = url
                , configValidateAuthMethods = False }
-  res <- dispatchMime mgr config req
-  case mimeResult res of
-    Left err -> error $ mimeError err
-    Right issues -> return issues
+  mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
 
 toE'State4' :: String -> E'State4
 toE'State4' s =

@@ -5,11 +5,12 @@ module Main (main) where
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
+import SimpleCmd (error')
 import SimpleCmdArgs
 
 import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge,
                 listOrgRepos, listRepoIssues,
-                repositoryName, issueNumber, issueTitle)
+                Repository(repositoryName), Issue(issueNumber, issueTitle))
 import Paths_forgejo (version)
 
 main :: IO ()
@@ -29,9 +30,12 @@ main =
 
 listOrgReposCmd :: Bool -> String -> IO ()
 listOrgReposCmd full org = do
-  repos <- listOrgRepos fedoraForge org
-  mapM_ (printRepo . T.unpack) . sort $
-    mapMaybe repositoryName repos
+  erepos <- listOrgRepos fedoraForge org
+  case erepos of
+    Left err -> error' err
+    Right repos ->
+      mapM_ (printRepo . T.unpack) . sort $
+      mapMaybe repositoryName repos
   where
     printRepo repo =
       putStrLn $ (if full then org ++ "/" else "") ++ repo
@@ -41,8 +45,11 @@ repoIssuesCmd createdBy state repoPath =
   case break (== '/') repoPath of
     (owner, '/':repo) | not (null owner) && not (null repo) && '/' `notElem` repo -> do
       let options = RepoIssueOptions createdBy state
-      issues <- listRepoIssues fedoraForge owner repo options
-      mapM_ printIssue . sort $ mapMaybe issueSummary issues
+      eissues <- listRepoIssues fedoraForge owner repo options
+      case eissues of
+        Left err -> error' err
+        Right issues ->
+          mapM_ printIssue . sort $ mapMaybe issueSummary issues
     _ -> fail "Expected repository in OWNER/REPO form"
   where
     issueSummary issue =
