@@ -10,8 +10,8 @@ author:              Jens Petersen <juhpetersen@gmail.com>
 maintainer:          Jens Petersen <juhpetersen@gmail.com>
 copyright:           2026  Jens Petersen <juhpetersen@gmail.com>
 category:            Web
-homepage:            https://github.com/juhp/forgejo
-bug-reports:         https://github.com/juhp/forgejo/issues
+homepage:            https://github.com/juhp/forgejo-hs
+bug-reports:         https://github.com/juhp/forgejo-hs/issues
 build-type:          Simple
 extra-doc-files:     README.md
                      ChangeLog.md
@@ -25,7 +25,7 @@ tested-with:         GHC == 8.10.7
 
 source-repository head
   type:                git
-  location:            https://github.com/juhp/forgejo.git
+  location:            https://github.com/juhp/forgejo-hs.git
 
 executable forgejo
   main-is:             Main.hs
