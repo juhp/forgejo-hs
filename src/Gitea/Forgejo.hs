@@ -53,10 +53,12 @@ listRepoIssues :: B.ByteString -- ^ api url
 listRepoIssues url owner repo options = do
   let baseReq = issueListIssues (Owner $ T.pack owner) (Repo $ T.pack repo)
                 -&- ParamType2 E'Type3'Issues
-      creatorReq = maybe baseReq (\user -> baseReq -&- CreatedBy user) $
-                   T.pack <$> repoIssueCreatedBy options
-      req = maybe creatorReq (\state -> creatorReq -&- State3 state) $
-            toE'State4' <$> (repoIssueState options)
+      creatorReq = maybe baseReq
+                   ((\user -> baseReq -&- CreatedBy user) . T.pack) $
+                   repoIssueCreatedBy options
+      req = maybe creatorReq
+            ((\state -> creatorReq -&- State3 state) . toE'State4') $
+            repoIssueState options
   mgr <- newTlsManager
   config' <- newConfig
   let config = config'
