@@ -1,0 +1,5 @@
+snapshot: lts-13.30
+extra-deps:
+- gitea-api-1.23.1.0
+- simple-cmd-args-0.1.8
+- katip-0.8.0.0

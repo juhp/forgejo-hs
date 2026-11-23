@@ -1,0 +1,3 @@
+[versions]
+# lts-11: Cabal 2.2
+oldest = lts-12
