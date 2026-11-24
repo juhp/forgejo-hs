@@ -7,6 +7,7 @@ The library provides these queries.
 
 - `listOrgRepos`
 - `listUserRepos`
+- `searchUsers`
 - `listRepoIssues`
 
 The package is distributed under a BSD3 license.
@@ -35,6 +36,7 @@ Available options:
 Available commands:
   repos                    list org's repos
   user-repos               list repositories associated with a user
+  users                    search for users by keyword
   issues                   list repo issues
 ```
 
@@ -46,3 +48,8 @@ through collaboration or organization membership.
 The command fetches every page of results visible to the caller.
 For authenticated requests, set `FORGEJO_TOKEN` to a personal access token for
 that instance with `read:user` and `read:repository` scopes.
+
+`forgejo-tool users SUBSTR` searches for users by substring and prints their
+usernames in sorted order. The server can match usernames and display names.
+For authenticated searches, set `FORGEJO_TOKEN` to a personal access token with
+the `read:user` scope.

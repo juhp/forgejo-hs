@@ -10,9 +10,10 @@ import SimpleCmdArgs
 import System.Environment (lookupEnv)
 
 import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge,
-                      listOrgRepos, listRepoIssues, listUserRepos,
+                      listOrgRepos, listRepoIssues, listUserRepos, searchUsers,
                       Issue(issueNumber, issueTitle),
-                      Repository(repositoryFullName, repositoryName))
+                      Repository(repositoryFullName, repositoryName),
+                      User(userLogin))
 import Paths_forgejo (version)
 
 main :: IO ()
@@ -28,6 +29,10 @@ main =
     listUserReposCmd
     <$> serviceOpt
     <*> strArg "USER"
+  , Subcommand "users" "search for users by keyword" $
+    searchUsersCmd
+    <$> serviceOpt
+    <*> strArg "KEYWORD"
   , Subcommand "issues" "list repo issues" $
     repoIssuesCmd
     <$> serviceOpt
@@ -57,6 +62,14 @@ listUserReposCmd url username = do
   case erepos of
     Left err -> error' err
     Right repos -> mapM_ (putStrLn . T.unpack) $ sort (mapMaybe repositoryFullName repos)
+
+searchUsersCmd :: String -> String -> IO ()
+searchUsersCmd url keyword = do
+  mtoken <- lookupEnv "FORGEJO_TOKEN"
+  eusers <- searchUsers url mtoken keyword
+  case eusers of
+    Left err -> error' err
+    Right users -> mapM_ (putStrLn . T.unpack) $ sort (mapMaybe userLogin users)
 
 repoIssuesCmd :: String -> Maybe String -> Maybe String -> String
               -> IO ()

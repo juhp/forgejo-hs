@@ -1,13 +1,15 @@
 module Gitea.Forgejo (
   listOrgRepos,
   listUserRepos,
+  searchUsers,
   listRepoIssues,
   RepoIssueOptions(..),
   defaultRepoIssueOptions,
   fedoraForge,
-  Repository(..),
   Issue(..),
-  Label(..)
+  Label(..),
+  Repository(..),
+  User(..)
   )
 where
 
@@ -17,11 +19,12 @@ import Data.Either.Extra (mapLeft)
 import qualified Data.Text as T
 import Gitea (addAuthMethod, configHost, configValidateAuthMethods, dispatchMime,
               issueListIssues, mimeError, mimeResult, newConfig, orgListRepos,
-              repoSearch, searchResultsData, searchResultsOk, userGet, userId, (-&-),
+              repoSearch, searchResultsData, searchResultsOk, userGet, userSearch,
+              userSearch200ResponseData, userSearch200ResponseOk, (-&-),
               AuthApiKeyAuthorizationHeaderToken(..), CreatedBy(..), E'State4(..),
-              E'Type3(..), Issue(..), Label(..), Org(..), Owner(..), Page(..),
-              ParamType2(..), Repo(..), Repository(..), Sort(..), State3(..), Uid(..),
-              Username(..))
+              E'Type3(..), GiteaConfig, Issue(..), Label(..), Org(..), Owner(..),
+              Page(..), ParamType2(..), Q(..), Repo(..), Repository(..), Sort(..),
+              State3(..), Uid(..), User(..), Username(..))
 import Network.HTTP.Client.TLS (newTlsManager)
 
 -- | Fedora Forge api url
@@ -49,30 +52,63 @@ listUserRepos :: String -- ^ API URL
               -> IO (Either String [Repository])
 listUserRepos url mtoken username = do
   mgr <- newTlsManager
-  config' <- newConfig
-  let defaultConfig = config'
-        { configHost = B.pack url
-        , configValidateAuthMethods = False }
-      config = maybe defaultConfig
-        (\key -> addAuthMethod defaultConfig (AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ key))))
-        mtoken
-      fetchPages uid page pages = do
+  config <- newUserConfig url mtoken
+  let fetchPage uid page = do
         let req = repoSearch -&- Uid uid -&- Sort (T.pack "id") -&- Page page
         result <- mimeResult <$> dispatchMime mgr config req
         case result of
-          Left err -> return $ Left ("Could not search repositories: " ++ mimeError err)
-          Right found ->
+          Left err -> return $
+            Left ("Could not search repositories: " ++ mimeError err)
+          Right found -> return $
             case (searchResultsOk found, searchResultsData found) of
-              (Just True, Just []) -> return $ Right (concat (reverse pages))
-              (Just True, Just repos) -> fetchPages uid (page + 1) (repos : pages)
-              _ -> return $ Left "Invalid repository search response"
+              (Just True, Just repos) -> Right repos
+              _ -> Left "Invalid repository search response"
   result <- mimeResult <$> dispatchMime mgr config (userGet (Username (T.pack username)))
   case result of
     Left err -> return $ Left ("Could not look up user " ++ username ++ ": " ++ mimeError err)
     Right user ->
       case userId user of
-        Just uid | uid > 0 -> fetchPages uid 1 []
+        Just uid | uid > 0 -> fetchAllPages (fetchPage uid)
         _ -> return $ Left ("Missing or invalid ID for user " ++ username)
+
+-- | Search for visible users using the server's keyword matching.
+searchUsers :: String -- ^ API URL
+            -> Maybe String -- ^ personal access token
+            -> String -- ^ search keyword
+            -> IO (Either String [User])
+searchUsers url mtoken keyword = do
+  mgr <- newTlsManager
+  config <- newUserConfig url mtoken
+  let request = userSearch -&- Q (T.pack keyword)
+  fetchAllPages $ \page -> do
+    result <- mimeResult <$> dispatchMime mgr config (request -&- Page page)
+    return $ case result of
+      Left err -> Left ("Could not search users: " ++ mimeError err)
+      Right found ->
+        case (userSearch200ResponseOk found, userSearch200ResponseData found) of
+          (Just True, Just users) -> Right users
+          _ -> Left "Invalid user search response"
+
+newUserConfig :: String -> Maybe String -> IO GiteaConfig
+newUserConfig url mtoken = do
+  config <- newConfig
+  let defaultConfig = config
+        { configHost = B.pack url
+        , configValidateAuthMethods = False }
+  return $ case mtoken of
+    Nothing -> defaultConfig
+    Just token -> addAuthMethod defaultConfig $
+      AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
+
+fetchAllPages :: (Int -> IO (Either String [a])) -> IO (Either String [a])
+fetchAllPages fetchPage = go 1 []
+  where
+    go page pages = do
+      result <- fetchPage page
+      case result of
+        Left err -> return (Left err)
+        Right [] -> return (Right (concat (reverse pages)))
+        Right items -> go (page + 1) (items : pages)
 
 data RepoIssueOptions = RepoIssueOptions
   { repoIssueCreatedBy :: Maybe String
