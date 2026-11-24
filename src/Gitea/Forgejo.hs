@@ -39,6 +39,17 @@ import Network.HTTP.Client.TLS (getGlobalManager)
 fedoraForge :: String
 fedoraForge = "https://forge.fedoraproject.org/api/v1"
 
+newApiConfig :: String -> Maybe String -> IO GiteaConfig
+newApiConfig url mtoken = do
+  config <- newConfig
+  let defaultConfig = config
+        { configHost = B.pack url
+        , configValidateAuthMethods = False }
+  return $ case mtoken of
+    Nothing -> defaultConfig
+    Just token -> addAuthMethod defaultConfig $
+      AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
+
 -- | List all visible repositories of a Forgejo org with an optional token.
 listOrgRepos :: String -- ^ API URL
              -> Maybe String -- ^ personal access token
@@ -109,17 +120,6 @@ searchUsers url mtoken keyword = do
         case (userSearch200ResponseOk found, userSearch200ResponseData found) of
           (Just True, Just users) -> Right (users, hasNextPage result)
           _ -> Left "Invalid user search response"
-
-newApiConfig :: String -> Maybe String -> IO GiteaConfig
-newApiConfig url mtoken = do
-  config <- newConfig
-  let defaultConfig = config
-        { configHost = B.pack url
-        , configValidateAuthMethods = False }
-  return $ case mtoken of
-    Nothing -> defaultConfig
-    Just token -> addAuthMethod defaultConfig $
-      AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
 
 listPageResult :: MimeResult [a] -> Either String ([a], Bool)
 listPageResult result = do
