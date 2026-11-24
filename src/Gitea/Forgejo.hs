@@ -24,14 +24,15 @@ import qualified Data.Text as T
 import Gitea (addAuthMethod, configHost, configValidateAuthMethods,
               dispatchMime, issueListIssues, mimeError, mimeResult,
               mimeResultResponse, newConfig, orgListRepos,
-              repoSearch, searchResultsData, searchResultsOk,
-              userGet, userSearch,
-              userSearch200ResponseData, userSearch200ResponseOk, (-&-),
+              repoSearch, userGet, userSearch, (-&-),
               AuthApiKeyAuthorizationHeaderToken(..), CreatedBy(..),
               E'State4(..), E'Type3(..), GiteaConfig,
               Issue(..), Label(..), MimeResult, Org(..), Owner(..),
               Page(..), ParamType2(..), Q(..), Repo(..), Repository(..),
-              Sort(..), State3(..), Uid(..), User(..), Username(..))
+              SearchResults(searchResultsData, searchResultsOk),
+              Sort(..), State3(..), Uid(..), User(..), Username(..),
+              UserSearch200Response(userSearch200ResponseData,
+                                    userSearch200ResponseOk))
 import Network.HTTP.Client (Manager, responseHeaders)
 import Network.HTTP.Client.TLS (getGlobalManager)
 
