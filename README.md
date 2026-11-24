@@ -3,7 +3,7 @@
 A simple Haskell library and query cli for gitea/forgejo forges built
 on top of [gitea-api](https://hackage.haskell.org/package/gitea-api).
 
-The library provides these queries.
+The library currently provides these queries:
 
 - `listOrgRepos`
 - `listUserRepos`
@@ -44,7 +44,7 @@ Available commands:
 
 Use `--server https://forgejo.example.org/api/v1` to query another instance.
 To authenticate, set `FORGEJO_TOKEN` to a personal access token for that instance.
-On Forgejo, the commands use these token scopes.
+On Forgejo, the commands use these token scopes:
 
 | Command | Token scopes |
 | --- | --- |
@@ -53,16 +53,19 @@ On Forgejo, the commands use these token scopes.
 | `users`, `user` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
 
-`forgejo-tool org-repos ORG` and `forgejo-tool issues OWNER/REPO` fetch all
-results visible to the caller.
+`forgejo-tool org-repos ORG` lists the repos in an organization.
+
+`forgejo-tool issues OWNER/REPO` lists the visible issues in a repository.
 
 `forgejo-tool user-repos USER` lists repositories associated with a user as
-`owner/repo`, including repositories they own and those Forgejo includes
+`owner/repo`, including repositories they own and those included
 through collaboration or organization membership.
-The command fetches every page of results visible to the caller.
 
 `forgejo-tool users SUBSTR` searches for users by substring and prints their
 usernames in sorted order. The server can match usernames and display names.
 
 `forgejo-tool user USER` looks up an exact username and prints the username,
 followed by the display name and profile URL on separate lines when available.
+
+The commands fetch every page of results visible to the caller.
+In future it is planned to have an option to limit the number of results.
