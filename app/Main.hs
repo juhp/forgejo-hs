@@ -25,14 +25,14 @@ main =
     <$> serviceOpt
     <*> switchLongWith "full" "Print full name"
     <*> strArg "ORG"
+  , Subcommand "users" "search for users by keyword" $
+    searchUsersCmd
+    <$> serviceOpt
+    <*> strArg "SUBSTR"
   , Subcommand "user-repos" "list repositories associated with a user" $
     listUserReposCmd
     <$> serviceOpt
     <*> strArg "USER"
-  , Subcommand "users" "search for users by keyword" $
-    searchUsersCmd
-    <$> serviceOpt
-    <*> strArg "KEYWORD"
   , Subcommand "issues" "list repo issues" $
     repoIssuesCmd
     <$> serviceOpt
