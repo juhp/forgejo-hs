@@ -45,7 +45,8 @@ main =
 
 listOrgReposCmd :: String -> Bool -> String -> IO ()
 listOrgReposCmd url full org = do
-  erepos <- listOrgRepos url org
+  mtoken <- lookupEnv "FORGEJO_TOKEN"
+  erepos <- listOrgRepos url mtoken org
   case erepos of
     Left err -> error' err
     Right repos ->
@@ -76,7 +77,8 @@ repoIssuesCmd url createdBy state repoPath =
   case break (== '/') repoPath of
     (owner, '/':repo) | not (null owner) && not (null repo) && '/' `notElem` repo -> do
       let options = RepoIssueOptions createdBy state
-      eissues <- listRepoIssues url owner repo options
+      mtoken <- lookupEnv "FORGEJO_TOKEN"
+      eissues <- listRepoIssues url mtoken owner repo options
       case eissues of
         Left err -> error' err
         Right issues ->

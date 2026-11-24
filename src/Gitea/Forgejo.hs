@@ -31,18 +31,15 @@ import Network.HTTP.Client.TLS (newTlsManager)
 fedoraForge :: String
 fedoraForge = "https://forge.fedoraproject.org/api/v1"
 
--- | List the repositories of a Forgejo org
-listOrgRepos :: String -- ^ api url
+-- | List the repositories of a Forgejo org with an optional token.
+listOrgRepos :: String -- ^ API URL
+             -> Maybe String -- ^ personal access token
              -> String -- ^ org
              -> IO (Either String [Repository])
-listOrgRepos url org = do
+listOrgRepos url mtoken org = do
   let req = orgListRepos (Org $ T.pack org)
   mgr <- newTlsManager
-  config' <- newConfig
-  let config = config'
-               { configHost = B.pack url
-               , configValidateAuthMethods = False }
-               -- `addAuthMethod` AuthOAuthFoo "secret-key"
+  config <- newApiConfig url mtoken
   mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
 
 -- | List repositories associated with a user and visible to the caller.
@@ -52,7 +49,7 @@ listUserRepos :: String -- ^ API URL
               -> IO (Either String [Repository])
 listUserRepos url mtoken username = do
   mgr <- newTlsManager
-  config <- newUserConfig url mtoken
+  config <- newApiConfig url mtoken
   let fetchPage uid page = do
         let req = repoSearch -&- Uid uid -&- Sort (T.pack "id") -&- Page page
         result <- mimeResult <$> dispatchMime mgr config req
@@ -78,7 +75,7 @@ searchUsers :: String -- ^ API URL
             -> IO (Either String [User])
 searchUsers url mtoken keyword = do
   mgr <- newTlsManager
-  config <- newUserConfig url mtoken
+  config <- newApiConfig url mtoken
   let request = userSearch -&- Q (T.pack keyword)
   fetchAllPages $ \page -> do
     result <- mimeResult <$> dispatchMime mgr config (request -&- Page page)
@@ -89,8 +86,8 @@ searchUsers url mtoken keyword = do
           (Just True, Just users) -> Right users
           _ -> Left "Invalid user search response"
 
-newUserConfig :: String -> Maybe String -> IO GiteaConfig
-newUserConfig url mtoken = do
+newApiConfig :: String -> Maybe String -> IO GiteaConfig
+newApiConfig url mtoken = do
   config <- newConfig
   let defaultConfig = config
         { configHost = B.pack url
@@ -119,13 +116,14 @@ data RepoIssueOptions = RepoIssueOptions
 defaultRepoIssueOptions :: RepoIssueOptions
 defaultRepoIssueOptions = RepoIssueOptions Nothing Nothing
 
--- | List issues in a forgejo repo
-listRepoIssues :: String -- ^ api url
+-- | List issues in a Forgejo repo with an optional token.
+listRepoIssues :: String -- ^ API URL
+               -> Maybe String -- ^ personal access token
                -> String -- ^ repo owner
                -> String -- ^ repo
                -> RepoIssueOptions -- ^ issue filter options
                -> IO (Either String [Issue])
-listRepoIssues url owner repo options = do
+listRepoIssues url mtoken owner repo options = do
   let baseReq = issueListIssues (Owner $ T.pack owner) (Repo $ T.pack repo)
                 -&- ParamType2 E'Type3'Issues
       creatorReq = maybe baseReq
@@ -135,10 +133,7 @@ listRepoIssues url owner repo options = do
             ((\state -> creatorReq -&- State3 state) . toE'State4') $
             repoIssueState options
   mgr <- newTlsManager
-  config' <- newConfig
-  let config = config'
-               { configHost = B.pack url
-               , configValidateAuthMethods = False }
+  config <- newApiConfig url mtoken
   mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
 
 toE'State4' :: String -> E'State4
