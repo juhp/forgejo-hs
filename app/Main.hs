@@ -71,8 +71,7 @@ searchUsersCmd url keyword = do
     Left err -> error' err
     Right users -> mapM_ (putStrLn . T.unpack) $ sort (mapMaybe userLogin users)
 
-repoIssuesCmd :: String -> Maybe String -> Maybe String -> String
-              -> IO ()
+repoIssuesCmd :: String -> Maybe String -> Maybe String -> String -> IO ()
 repoIssuesCmd url createdBy state repoPath =
   case break (== '/') repoPath of
     (owner, '/':repo) | not (null owner) && not (null repo) && '/' `notElem` repo -> do
