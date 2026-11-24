@@ -55,11 +55,11 @@ On Forgejo, the commands use these token scopes:
 | `users`, `user` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
 
-`forgejo-tool orgs`: lists visible organization names in sorted order.
+`forgejo-tool orgs`: lists organization names in sorted order.
 
 `forgejo-tool org-repos ORG`: lists the repos in an organization.
 
-`forgejo-tool issues OWNER/REPO`: lists the visible issues in a repository.
+`forgejo-tool issues OWNER/REPO`: lists the issues in a repository.
 
 `forgejo-tool user-repos USER`: lists repositories associated with a user as
 `owner/repo`, including repositories they own and those included

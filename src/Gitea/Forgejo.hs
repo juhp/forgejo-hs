@@ -54,7 +54,7 @@ newApiConfig url mtoken = do
     Just token -> addAuthMethod defaultConfig $
       AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
 
--- | List all organizations visible to the caller.
+-- | List all visible organizations.
 listOrgs :: String -- ^ API URL
          -> Maybe String -- ^ personal access token
          -> IO (Either String [Organization])
@@ -76,7 +76,7 @@ listOrgRepos url mtoken org = do
   fetchAllPages $ \page ->
     listPageResult <$> dispatchMime mgr config (req -&- Page page)
 
--- | List repositories associated with a user and visible to the caller.
+-- | List visible repositories associated with a user.
 listUserRepos :: String -- ^ API URL
               -> Maybe String -- ^ personal access token
               -> String -- ^ username
