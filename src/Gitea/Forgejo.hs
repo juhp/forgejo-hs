@@ -33,7 +33,7 @@ import Gitea (addAuthMethod, configHost, configValidateAuthMethods,
               Page(..), ParamType2(..), Q(..), Repo(..), Repository(..),
               Sort(..), State3(..), Uid(..), User(..), Username(..))
 import Network.HTTP.Client (Manager, responseHeaders)
-import Network.HTTP.Client.TLS (newTlsManager)
+import Network.HTTP.Client.TLS (getGlobalManager)
 
 -- | Fedora Forge api url
 fedoraForge :: String
@@ -46,7 +46,7 @@ listOrgRepos :: String -- ^ API URL
              -> IO (Either String [Repository])
 listOrgRepos url mtoken org = do
   let req = orgListRepos (Org $ T.pack org)
-  mgr <- newTlsManager
+  mgr <- getGlobalManager
   config <- newApiConfig url mtoken
   fetchAllPages $ \page ->
     listPageResult <$> dispatchMime mgr config (req -&- Page page)
@@ -57,7 +57,7 @@ listUserRepos :: String -- ^ API URL
               -> String -- ^ username
               -> IO (Either String [Repository])
 listUserRepos url mtoken username = do
-  mgr <- newTlsManager
+  mgr <- getGlobalManager
   config <- newApiConfig url mtoken
   let fetchPage uid page = do
         let req = repoSearch -&- Uid uid -&- Sort (T.pack "id") -&- Page page
@@ -83,7 +83,7 @@ getUser :: String -- ^ API URL
         -> String -- ^ username
         -> IO (Either String User)
 getUser url mtoken username = do
-  mgr <- newTlsManager
+  mgr <- getGlobalManager
   config <- newApiConfig url mtoken
   lookupUser mgr config username
 
@@ -98,7 +98,7 @@ searchUsers :: String -- ^ API URL
             -> String -- ^ search keyword
             -> IO (Either String [User])
 searchUsers url mtoken keyword = do
-  mgr <- newTlsManager
+  mgr <- getGlobalManager
   config <- newApiConfig url mtoken
   let request = userSearch -&- Q (T.pack keyword)
   fetchAllPages $ \page -> do
@@ -169,7 +169,7 @@ listRepoIssues url mtoken owner repo options = do
       req = maybe creatorReq
             ((\state -> creatorReq -&- State3 state) . toE'State4') $
             repoIssueState options
-  mgr <- newTlsManager
+  mgr <- getGlobalManager
   config <- newApiConfig url mtoken
   fetchAllPages $ \page ->
     listPageResult <$> dispatchMime mgr config (req -&- Page page)
