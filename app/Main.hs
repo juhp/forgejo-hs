@@ -7,10 +7,12 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import SimpleCmd (error', (+-+))
 import SimpleCmdArgs
+import System.Environment (lookupEnv)
 
 import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge,
-                listOrgRepos, listRepoIssues,
-                Repository(repositoryName), Issue(issueNumber, issueTitle))
+                      listOrgRepos, listRepoIssues, listUserRepos,
+                      Issue(issueNumber, issueTitle),
+                      Repository(repositoryFullName, repositoryName))
 import Paths_forgejo (version)
 
 main :: IO ()
@@ -22,6 +24,10 @@ main =
     <$> serviceOpt
     <*> switchLongWith "full" "Print full name"
     <*> strArg "ORG"
+  , Subcommand "user-repos" "list repositories associated with a user" $
+    listUserReposCmd
+    <$> serviceOpt
+    <*> strArg "USER"
   , Subcommand "issues" "list repo issues" $
     repoIssuesCmd
     <$> serviceOpt
@@ -43,6 +49,14 @@ listOrgReposCmd url full org = do
   where
     printRepo repo =
       putStrLn $ (if full then org ++ "/" else "") ++ repo
+
+listUserReposCmd :: String -> String -> IO ()
+listUserReposCmd url username = do
+  mtoken <- lookupEnv "FORGEJO_TOKEN"
+  erepos <- listUserRepos url mtoken username
+  case erepos of
+    Left err -> error' err
+    Right repos -> mapM_ (putStrLn . T.unpack) $ sort (mapMaybe repositoryFullName repos)
 
 repoIssuesCmd :: String -> Maybe String -> Maybe String -> String
               -> IO ()
