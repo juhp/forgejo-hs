@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                forgejo
-version:             0.1.0
+version:             0.1.1
 synopsis:            forgejo query library and cli
 description:
         A simple Forgejo/Gitea forge query library and cli tool.
@@ -22,12 +22,13 @@ tested-with:         GHC == 8.10.7
                       || == 9.6.7
                       || == 9.8.4
                       || == 9.10.3
+                      || == 9.12.4
 
 source-repository head
   type:                git
   location:            https://github.com/juhp/forgejo-hs.git
 
-executable forgejo
+executable forgejo-tool
   main-is:             Main.hs
   other-modules:       Paths_forgejo
   autogen-modules:     Paths_forgejo
