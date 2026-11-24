@@ -55,20 +55,20 @@ On Forgejo, the commands use these token scopes:
 | `users`, `user` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
 
-`forgejo-tool orgs` lists visible organization names in sorted order.
+`forgejo-tool orgs`: lists visible organization names in sorted order.
 
-`forgejo-tool org-repos ORG` lists the repos in an organization.
+`forgejo-tool org-repos ORG`: lists the repos in an organization.
 
-`forgejo-tool issues OWNER/REPO` lists the visible issues in a repository.
+`forgejo-tool issues OWNER/REPO`: lists the visible issues in a repository.
 
-`forgejo-tool user-repos USER` lists repositories associated with a user as
+`forgejo-tool user-repos USER`: lists repositories associated with a user as
 `owner/repo`, including repositories they own and those included
 through collaboration or organization membership.
 
-`forgejo-tool users SUBSTR` searches for users by substring and prints their
+`forgejo-tool users SUBSTR`: searches for users by substring and prints their
 usernames in sorted order. The server can match usernames and display names.
 
-`forgejo-tool user USER` looks up an exact username and prints the username,
+`forgejo-tool user USER`: looks up an exact username and prints the username,
 followed by the display name and profile URL on separate lines when available.
 
 The commands fetch every page of results visible to the caller.
