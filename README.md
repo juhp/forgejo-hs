@@ -8,6 +8,7 @@ The library provides these queries.
 - `listOrgRepos`
 - `listUserRepos`
 - `searchUsers`
+- `getUser`
 - `listRepoIssues`
 
 The package is distributed under a BSD3 license.
@@ -36,6 +37,7 @@ Available options:
 Available commands:
   org-repos                list org's repos
   users                    search for users by keyword
+  user                     show a user's profile
   user-repos               list repositories associated with a user
   issues                   list repo issues
 ```
@@ -48,7 +50,7 @@ On Forgejo, the commands use these token scopes.
 | --- | --- |
 | `org-repos` | `read:organization` |
 | `issues` | `read:issue` |
-| `users` | `read:user` |
+| `users`, `user` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
 
 `forgejo-tool org-repos ORG` and `forgejo-tool issues OWNER/REPO` fetch all
@@ -61,3 +63,6 @@ The command fetches every page of results visible to the caller.
 
 `forgejo-tool users SUBSTR` searches for users by substring and prints their
 usernames in sorted order. The server can match usernames and display names.
+
+`forgejo-tool user USER` looks up an exact username and prints the username,
+followed by the display name and profile URL on separate lines when available.

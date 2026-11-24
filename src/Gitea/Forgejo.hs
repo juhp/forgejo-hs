@@ -4,6 +4,7 @@ module Gitea.Forgejo (
   listOrgRepos,
   listUserRepos,
   searchUsers,
+  getUser,
   listRepoIssues,
   RepoIssueOptions(..),
   defaultRepoIssueOptions,
@@ -31,7 +32,7 @@ import Gitea (addAuthMethod, configHost, configValidateAuthMethods,
               Issue(..), Label(..), MimeResult, Org(..), Owner(..),
               Page(..), ParamType2(..), Q(..), Repo(..), Repository(..),
               Sort(..), State3(..), Uid(..), User(..), Username(..))
-import Network.HTTP.Client (responseHeaders)
+import Network.HTTP.Client (Manager, responseHeaders)
 import Network.HTTP.Client.TLS (newTlsManager)
 
 -- | Fedora Forge api url
@@ -68,13 +69,28 @@ listUserRepos url mtoken username = do
             case (searchResultsOk found, searchResultsData found) of
               (Just True, Just repos) -> Right (repos, hasNextPage result)
               _ -> Left "Invalid repository search response"
-  result <- mimeResult <$> dispatchMime mgr config (userGet (Username (T.pack username)))
+  result <- lookupUser mgr config username
   case result of
-    Left err -> return $ Left ("Could not look up user " ++ username ++ ": " ++ mimeError err)
+    Left err -> return (Left err)
     Right user ->
       case userId user of
         Just uid | uid > 0 -> fetchAllPages (fetchPage uid)
         _ -> return $ Left ("Missing or invalid ID for user " ++ username)
+
+-- | Get a user's profile by username.
+getUser :: String -- ^ API URL
+        -> Maybe String -- ^ personal access token
+        -> String -- ^ username
+        -> IO (Either String User)
+getUser url mtoken username = do
+  mgr <- newTlsManager
+  config <- newApiConfig url mtoken
+  lookupUser mgr config username
+
+lookupUser :: Manager -> GiteaConfig -> String -> IO (Either String User)
+lookupUser mgr config username = do
+  result <- mimeResult <$> dispatchMime mgr config (userGet (Username (T.pack username)))
+  return $ mapLeft (\err -> "Could not look up user " ++ username ++ ": " ++ mimeError err) result
 
 -- | Search for visible users using the server's keyword matching.
 searchUsers :: String -- ^ API URL

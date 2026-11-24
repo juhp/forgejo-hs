@@ -3,17 +3,17 @@
 module Main (main) where
 
 import Data.List (sort)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Text as T
 import SimpleCmd (error', (+-+))
 import SimpleCmdArgs
 import System.Environment (lookupEnv)
 
-import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge,
+import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge, getUser,
                       listOrgRepos, listRepoIssues, listUserRepos, searchUsers,
                       Issue(issueNumber, issueTitle),
                       Repository(repositoryFullName, repositoryName),
-                      User(userLogin))
+                      User(userFullName, userHtmlUrl, userLogin))
 import Paths_forgejo (version)
 
 main :: IO ()
@@ -29,6 +29,10 @@ main =
     searchUsersCmd
     <$> serviceOpt
     <*> strArg "SUBSTR"
+  , Subcommand "user" "show a user's profile" $
+    getUserCmd
+    <$> serviceOpt
+    <*> strArg "USER"
   , Subcommand "user-repos" "list repositories associated with a user" $
     listUserReposCmd
     <$> serviceOpt
@@ -71,6 +75,19 @@ searchUsersCmd url keyword = do
   case eusers of
     Left err -> error' err
     Right users -> mapM_ (putStrLn . T.unpack) $ sort (mapMaybe userLogin users)
+
+getUserCmd :: String -> String -> IO ()
+getUserCmd url username = do
+  mtoken <- lookupEnv "FORGEJO_TOKEN"
+  result <- getUser url mtoken username
+  case result of
+    Left err -> error' err
+    Right user ->
+      case userLogin user of
+        Just login | not (T.null login) -> do
+          let fields = login : catMaybes [userFullName user, userHtmlUrl user]
+          mapM_ (putStrLn . T.unpack) (filter (not . T.null) fields)
+        _ -> error' ("Missing username in profile for " ++ username)
 
 repoIssuesCmd :: String -> Maybe String -> Maybe String -> String -> IO ()
 repoIssuesCmd url createdBy state repoPath =
