@@ -20,7 +20,7 @@ main :: IO ()
 main =
   simpleCmdArgs (Just version) "Forgejo client" "Simple forgejo CLI" $
   subcommands
-  [ Subcommand "repos" "list org's repos" $
+  [ Subcommand "org-repos" "list org's repos" $
     listOrgReposCmd
     <$> serviceOpt
     <*> switchLongWith "full" "Print full name"
