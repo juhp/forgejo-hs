@@ -51,6 +51,9 @@ On Forgejo, the commands use these token scopes.
 | `users` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
 
+`forgejo-tool org-repos ORG` and `forgejo-tool issues OWNER/REPO` fetch all
+results visible to the caller.
+
 `forgejo-tool user-repos USER` lists repositories associated with a user as
 `owner/repo`, including repositories they own and those Forgejo includes
 through collaboration or organization membership.

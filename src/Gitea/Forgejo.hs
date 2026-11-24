@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Gitea.Forgejo (
   listOrgRepos,
   listUserRepos,
@@ -13,25 +15,30 @@ module Gitea.Forgejo (
   )
 where
 
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toLower)
 import Data.Either.Extra (mapLeft)
 import qualified Data.Text as T
-import Gitea (addAuthMethod, configHost, configValidateAuthMethods, dispatchMime,
-              issueListIssues, mimeError, mimeResult, newConfig, orgListRepos,
-              repoSearch, searchResultsData, searchResultsOk, userGet, userSearch,
+import Gitea (addAuthMethod, configHost, configValidateAuthMethods,
+              dispatchMime, issueListIssues, mimeError, mimeResult,
+              mimeResultResponse, newConfig, orgListRepos,
+              repoSearch, searchResultsData, searchResultsOk,
+              userGet, userSearch,
               userSearch200ResponseData, userSearch200ResponseOk, (-&-),
-              AuthApiKeyAuthorizationHeaderToken(..), CreatedBy(..), E'State4(..),
-              E'Type3(..), GiteaConfig, Issue(..), Label(..), Org(..), Owner(..),
-              Page(..), ParamType2(..), Q(..), Repo(..), Repository(..), Sort(..),
-              State3(..), Uid(..), User(..), Username(..))
+              AuthApiKeyAuthorizationHeaderToken(..), CreatedBy(..),
+              E'State4(..), E'Type3(..), GiteaConfig,
+              Issue(..), Label(..), MimeResult, Org(..), Owner(..),
+              Page(..), ParamType2(..), Q(..), Repo(..), Repository(..),
+              Sort(..), State3(..), Uid(..), User(..), Username(..))
+import Network.HTTP.Client (responseHeaders)
 import Network.HTTP.Client.TLS (newTlsManager)
 
 -- | Fedora Forge api url
 fedoraForge :: String
 fedoraForge = "https://forge.fedoraproject.org/api/v1"
 
--- | List the repositories of a Forgejo org with an optional token.
+-- | List all visible repositories of a Forgejo org with an optional token.
 listOrgRepos :: String -- ^ API URL
              -> Maybe String -- ^ personal access token
              -> String -- ^ org
@@ -40,7 +47,8 @@ listOrgRepos url mtoken org = do
   let req = orgListRepos (Org $ T.pack org)
   mgr <- newTlsManager
   config <- newApiConfig url mtoken
-  mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
+  fetchAllPages $ \page ->
+    listPageResult <$> dispatchMime mgr config (req -&- Page page)
 
 -- | List repositories associated with a user and visible to the caller.
 listUserRepos :: String -- ^ API URL
@@ -52,13 +60,13 @@ listUserRepos url mtoken username = do
   config <- newApiConfig url mtoken
   let fetchPage uid page = do
         let req = repoSearch -&- Uid uid -&- Sort (T.pack "id") -&- Page page
-        result <- mimeResult <$> dispatchMime mgr config req
-        case result of
+        result <- dispatchMime mgr config req
+        case mimeResult result of
           Left err -> return $
             Left ("Could not search repositories: " ++ mimeError err)
           Right found -> return $
             case (searchResultsOk found, searchResultsData found) of
-              (Just True, Just repos) -> Right repos
+              (Just True, Just repos) -> Right (repos, hasNextPage result)
               _ -> Left "Invalid repository search response"
   result <- mimeResult <$> dispatchMime mgr config (userGet (Username (T.pack username)))
   case result of
@@ -78,12 +86,12 @@ searchUsers url mtoken keyword = do
   config <- newApiConfig url mtoken
   let request = userSearch -&- Q (T.pack keyword)
   fetchAllPages $ \page -> do
-    result <- mimeResult <$> dispatchMime mgr config (request -&- Page page)
-    return $ case result of
+    result <- dispatchMime mgr config (request -&- Page page)
+    return $ case mimeResult result of
       Left err -> Left ("Could not search users: " ++ mimeError err)
       Right found ->
         case (userSearch200ResponseOk found, userSearch200ResponseData found) of
-          (Just True, Just users) -> Right users
+          (Just True, Just users) -> Right (users, hasNextPage result)
           _ -> Left "Invalid user search response"
 
 newApiConfig :: String -> Maybe String -> IO GiteaConfig
@@ -97,15 +105,28 @@ newApiConfig url mtoken = do
     Just token -> addAuthMethod defaultConfig $
       AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
 
-fetchAllPages :: (Int -> IO (Either String [a])) -> IO (Either String [a])
+listPageResult :: MimeResult [a] -> Either String ([a], Bool)
+listPageResult result = do
+  items <- mapLeft mimeError (mimeResult result)
+  return (items, hasNextPage result)
+
+hasNextPage :: MimeResult a -> Bool
+hasNextPage result =
+  any (BS.isInfixOf "rel=\"next\"")
+  [value | (name, value) <- headers, name == "Link"]
+  where
+    headers = responseHeaders (mimeResultResponse result)
+
+fetchAllPages :: (Int -> IO (Either String ([a], Bool)))
+              -> IO (Either String [a])
 fetchAllPages fetchPage = go 1 []
   where
     go page pages = do
       result <- fetchPage page
       case result of
         Left err -> return (Left err)
-        Right [] -> return (Right (concat (reverse pages)))
-        Right items -> go (page + 1) (items : pages)
+        Right ([], False) -> return (Right (concat (reverse pages)))
+        Right (items, _) -> go (page + 1) (items : pages)
 
 data RepoIssueOptions = RepoIssueOptions
   { repoIssueCreatedBy :: Maybe String
@@ -116,7 +137,7 @@ data RepoIssueOptions = RepoIssueOptions
 defaultRepoIssueOptions :: RepoIssueOptions
 defaultRepoIssueOptions = RepoIssueOptions Nothing Nothing
 
--- | List issues in a Forgejo repo with an optional token.
+-- | List all matching issues in a Forgejo repo with an optional token.
 listRepoIssues :: String -- ^ API URL
                -> Maybe String -- ^ personal access token
                -> String -- ^ repo owner
@@ -134,7 +155,8 @@ listRepoIssues url mtoken owner repo options = do
             repoIssueState options
   mgr <- newTlsManager
   config <- newApiConfig url mtoken
-  mapLeft mimeError . mimeResult <$> dispatchMime mgr config req
+  fetchAllPages $ \page ->
+    listPageResult <$> dispatchMime mgr config (req -&- Page page)
 
 toE'State4' :: String -> E'State4
 toE'State4' s =
