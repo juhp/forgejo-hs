@@ -10,8 +10,9 @@ import SimpleCmdArgs
 import System.Environment (lookupEnv)
 
 import Gitea.Forgejo (RepoIssueOptions(..), fedoraForge, getUser,
-                      listOrgRepos, listRepoIssues, listUserRepos, searchUsers,
+                      listOrgRepos, listOrgs, listRepoIssues, listUserRepos, searchUsers,
                       Issue(issueNumber, issueTitle),
+                      Organization(organizationName, organizationUsername),
                       Repository(repositoryFullName, repositoryName),
                       User(userFullName, userHtmlUrl, userLogin))
 import Paths_forgejo (version)
@@ -20,7 +21,10 @@ main :: IO ()
 main =
   simpleCmdArgs (Just version) "Forgejo client" "Simple forgejo CLI" $
   subcommands
-  [ Subcommand "org-repos" "list org's repos" $
+  [ Subcommand "orgs" "list organizations" $
+    listOrgsCmd
+    <$> serviceOpt
+  , Subcommand "org-repos" "list org's repos" $
     listOrgReposCmd
     <$> serviceOpt
     <*> switchLongWith "full" "Print full name"
@@ -46,6 +50,20 @@ main =
   ]
   where
     serviceOpt = strOptionalWith 's' "server" "URL" ("Forgejo server" +-+ "[default:" +-+ fedoraForge ++ "]") fedoraForge
+
+listOrgsCmd :: String -> IO ()
+listOrgsCmd url = do
+  mtoken <- lookupEnv "FORGEJO_TOKEN"
+  result <- listOrgs url mtoken
+  case result of
+    Left err -> error' err
+    Right orgs ->
+      mapM_ (putStrLn . T.unpack) . sort $ mapMaybe orgName orgs
+  where
+    orgName org =
+      case organizationName org of
+        Just name | not (T.null name) -> Just name
+        _ -> organizationUsername org
 
 listOrgReposCmd :: String -> Bool -> String -> IO ()
 listOrgReposCmd url full org = do

@@ -6,6 +6,7 @@
 - add "user-repos" command with `listUserRepos` API
 - add "users" command with `searchUsers` API
 - add "user" command with `getUser` API
+- add "orgs" command and `listOrgs` API
 - [breaking] `listOrgRepos` and `listRepoIssues` now take an optional token
 - paginate `listOrgRepos` and `listRepoIssues`
 - use getGlobalManager

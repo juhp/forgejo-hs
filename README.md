@@ -5,6 +5,7 @@ on top of [gitea-api](https://hackage.haskell.org/package/gitea-api).
 
 The library currently provides these queries:
 
+- `listOrgs`
 - `listOrgRepos`
 - `listUserRepos`
 - `searchUsers`
@@ -35,6 +36,7 @@ Available options:
   --version                Show version
 
 Available commands:
+  orgs                     list organizations
   org-repos                list org's repos
   users                    search for users by keyword
   user                     show a user's profile
@@ -48,10 +50,12 @@ On Forgejo, the commands use these token scopes:
 
 | Command | Token scopes |
 | --- | --- |
-| `org-repos` | `read:organization` |
+| `orgs`, `org-repos` | `read:organization` |
 | `issues` | `read:issue` |
 | `users`, `user` | `read:user` |
 | `user-repos` | `read:user`, `read:repository` |
+
+`forgejo-tool orgs` lists visible organization names in sorted order.
 
 `forgejo-tool org-repos ORG` lists the repos in an organization.
 

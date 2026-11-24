@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Gitea.Forgejo (
+  listOrgs,
   listOrgRepos,
   listUserRepos,
   searchUsers,
@@ -11,6 +12,7 @@ module Gitea.Forgejo (
   fedoraForge,
   Issue(..),
   Label(..),
+  Organization(..),
   Repository(..),
   User(..)
   )
@@ -23,12 +25,13 @@ import Data.Either.Extra (mapLeft)
 import qualified Data.Text as T
 import Gitea (addAuthMethod, configHost, configValidateAuthMethods,
               dispatchMime, issueListIssues, mimeError, mimeResult,
-              mimeResultResponse, newConfig, orgListRepos,
+              mimeResultResponse, newConfig, orgGetAll, orgListRepos,
               repoSearch, userGet, userSearch, (-&-),
               AuthApiKeyAuthorizationHeaderToken(..), CreatedBy(..),
               E'State4(..), E'Type3(..), GiteaConfig,
-              Issue(..), Label(..), MimeResult, Org(..), Owner(..),
-              Page(..), ParamType2(..), Q(..), Repo(..), Repository(..),
+              Issue(..), Label(..), MimeResult, Org(..), Organization(..),
+              Owner(..), Page(..), ParamType2(..), Q(..), Repo(..),
+              Repository(..),
               SearchResults(searchResultsData, searchResultsOk),
               Sort(..), State3(..), Uid(..), User(..), Username(..),
               UserSearch200Response(userSearch200ResponseData,
@@ -50,6 +53,16 @@ newApiConfig url mtoken = do
     Nothing -> defaultConfig
     Just token -> addAuthMethod defaultConfig $
       AuthApiKeyAuthorizationHeaderToken (T.pack ("token " ++ token))
+
+-- | List all organizations visible to the caller.
+listOrgs :: String -- ^ API URL
+         -> Maybe String -- ^ personal access token
+         -> IO (Either String [Organization])
+listOrgs url mtoken = do
+  mgr <- getGlobalManager
+  config <- newApiConfig url mtoken
+  fetchAllPages $ \page ->
+    listPageResult <$> dispatchMime mgr config (orgGetAll -&- Page page)
 
 -- | List all visible repositories of a Forgejo org with an optional token.
 listOrgRepos :: String -- ^ API URL
